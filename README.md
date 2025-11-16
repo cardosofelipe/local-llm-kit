@@ -9,9 +9,9 @@ A complete, ready-to-deploy stack for running local Large Language Models with a
 - **Open-WebUI** - Beautiful, extensible web interface for interacting with AI models
 - **Ollama** - Local LLM inference engine with CPU and GPU acceleration
 - **SearXNG** - Privacy-respecting meta-search engine for web-enriched responses
+- **Automated setup** - Hardware detection, config generation, admin account creation
 - **Web search enabled by default** - Real-time web search integration out of the box
 - **Multi-platform GPU support** - Pre-configured for AMD (Vulkan) and NVIDIA (CUDA)
-- **Batteries-included setup** - Everything you need in one package, ready to run
 
 ## Quick Start
 
@@ -27,14 +27,40 @@ make setup
 make start
 ```
 
-Access Open-WebUI at **http://localhost:11300** and create your admin account.
+**Access Open-WebUI at http://localhost:11300**
 
-That's it! The setup script automatically:
+**Default admin credentials (change after first login!):**
+- Email: `admin@localhost`
+- Password: `admin123`
+
+That's it! The setup automatically:
 - Detects your OS and GPU
 - Selects the optimal Docker Compose template
-- Generates all secrets
-- Configures web search
+- Generates all secrets (WEBUI_SECRET_KEY, SEARXNG_SECRET)
+- Creates admin account and imports configuration
+- Configures web search with SearXNG
+- Persists Ollama SSH keys
 - Opens your browser (use `--headless` to skip)
+
+## Requirements
+
+- Docker & Docker Compose
+- 8GB+ RAM (16GB+ recommended)
+- 10GB+ free disk space for models
+- `openssl` (for secret generation)
+
+## Hardware Support
+
+The `setup.sh` script auto-detects your hardware and configures the optimal template:
+
+| Platform | Description | Notes |
+|----------|-------------|-------|
+| **CPU-Only** | Works on any system | Slower inference, no GPU required |
+| **NVIDIA GPU** | RTX/GTX series, datacenter GPUs | Requires NVIDIA Container Toolkit |
+| **AMD GPU** | RDNA 2/3 (RX 6000/7000/8000) | Uses Vulkan acceleration |
+| **macOS** | Apple Silicon / Intel | Native Ollama + Docker WebUI for Metal GPU |
+
+See [config-templates/README.md](config-templates/README.md) for details on each template.
 
 ## Common Commands
 
@@ -47,6 +73,7 @@ make status         # Check service health
 make logs           # View all logs
 make logs-ollama    # View specific service logs
 make reset          # Full reset (deletes all data)
+make clean          # Remove generated files only
 ```
 
 Or use scripts directly:
@@ -54,32 +81,13 @@ Or use scripts directly:
 ./setup.sh                  # Interactive setup
 ./start.sh                  # Start services
 ./start.sh --headless       # Start without opening browser
+./start.sh --verbose        # Detailed output
 ./stop.sh                   # Stop services
 ```
 
-## Requirements
-
-- Docker & Docker Compose
-- 8GB+ RAM (16GB+ recommended)
-- 10GB+ free disk space
-
-## Hardware Support
-
-The `setup.sh` script auto-detects your hardware and configures the optimal template:
-
-**CPU-Only** - Works on any system, slower inference
-
-**NVIDIA GPU** - RTX/GTX series, requires NVIDIA Container Toolkit
-
-**AMD GPU** - RDNA 2/3 (RX 6000/7000/8000), uses Vulkan acceleration
-
-**macOS** - Native Ollama + Docker WebUI for full Metal GPU acceleration
-
-See [config-templates/README.md](config-templates/README.md) for details on each template.
+---
 
 ## Configuration
-
-Configuration is handled by `setup.sh`, but you can customize after setup:
 
 ### Storage Paths
 
@@ -89,8 +97,14 @@ During setup, you'll be prompted for storage paths. To change them later, edit `
 # Models can be large (4GB-100GB per model)
 OLLAMA_MODELS_PATH=./data/models/ollama
 
+# Ollama config (SSH keys, settings)
+OLLAMA_CONFIG_PATH=./config/ollama
+
 # Web UI data (database, uploads)
 OPENWEBUI_DATA_PATH=./data/open-webui
+
+# SearXNG config
+SEARXNG_CONFIG_PATH=./config/searxng
 ```
 
 ### Performance Tuning
@@ -107,11 +121,51 @@ OLLAMA_NUM_PARALLEL=2
 OLLAMA_MAX_LOADED_MODELS=1
 ```
 
+### Admin Account
+
+Default credentials are set via environment variables (change in `.env` before setup):
+
+```bash
+WEBUI_ADMIN_NAME=admin
+WEBUI_ADMIN_EMAIL=admin@localhost
+WEBUI_ADMIN_PASSWORD=admin123
+```
+
+**⚠️ Change the password after first login!**
+Go to Settings → Account → Change Password
+
 ### Web Search
 
-Web search is automatically configured by `start.sh` on first run.
+Web search is automatically configured on first start. The system:
+1. Creates default admin user
+2. Authenticates to get API token
+3. Imports config with web search enabled
+4. Configures SearXNG as search engine
 
-Verify at: http://localhost:11300/admin/settings/web
+Verify at: http://localhost:11300/admin/settings → Documents → Web Search
+
+### Secrets
+
+All secrets are auto-generated during `make setup`:
+
+```bash
+WEBUI_SECRET_KEY=<64-char hex>      # Open-WebUI session secret
+SEARXNG_SECRET=<64-char hex>        # SearXNG encryption key
+```
+
+To regenerate secrets:
+```bash
+# Generate new secrets
+openssl rand -hex 32
+
+# Update in .env
+nano .env
+
+# Restart services
+make restart
+```
+
+---
 
 ## Ports
 
@@ -119,63 +173,214 @@ Verify at: http://localhost:11300/admin/settings/web
 |---------|------|-------------|
 | Open-WebUI | 11300 | Web interface |
 | SearXNG | 11380 | Search engine |
-| Ollama | 11434 | Internal API |
+| Ollama | 11434 | Internal API (not exposed by default) |
+
+Ports use the 11xxx range to avoid conflicts with common development servers (3000, 8080).
+
+---
 
 ## Project Structure
 
 ```
 .
-├── docker-compose.yml       # Service definitions
-├── .env                     # Configuration variables
-├── init-webui-config.sh     # Web search initialization
-├── config/
-│   ├── ollama/             # Ollama configuration
-│   └── searxng/            # SearXNG settings
-├── config-templates/       # Reference configurations
-└── data/                   # User data and models (gitignored)
+├── docker-compose.yml          # Generated from template
+├── .env                        # Configuration (gitignored)
+├── setup.sh                    # Interactive setup
+├── start.sh                    # Smart startup
+├── stop.sh                     # Clean shutdown
+├── Makefile                    # Convenience commands
+├── config/                     # Runtime config (gitignored)
+│   ├── ollama/                 # Ollama SSH keys, config
+│   └── searxng/                # Generated SearXNG settings
+├── config-templates/           # Templates (tracked in git)
+│   ├── docker-compose.*.yml    # Hardware-specific templates
+│   ├── searxng/               # SearXNG config templates
+│   ├── default-config.json     # Default Open-WebUI config
+│   └── README.md              # Template documentation
+├── scripts/
+│   ├── lib/                    # Shared library functions
+│   │   ├── common.sh          # Logging, OS detection
+│   │   ├── hardware.sh        # GPU detection
+│   │   ├── secrets.sh         # Secret generation
+│   │   ├── state.sh           # State management
+│   │   ├── interactive.sh     # User prompts
+│   │   └── config.sh          # Config file management
+│   └── internal/              # Internal automation
+│       ├── wait-for-db.sh     # Wait for database
+│       └── init-webui.sh      # Create admin + import config
+└── data/                      # User data (gitignored)
+    ├── models/ollama/         # Downloaded models
+    └── open-webui/            # Database, uploads, cache
 ```
+
+---
+
+## Script Reference
+
+### Main Scripts
+
+**setup.sh** - Interactive first-time setup
+- Detects OS and GPU hardware
+- Prompts for template selection
+- Configures storage paths
+- Generates secrets automatically
+- Initializes config files from templates
+
+**start.sh** - Smart startup with auto-initialization
+- Checks prerequisites (setup complete, Docker running)
+- Starts containers
+- Waits for database initialization
+- Creates admin user (first boot only)
+- Imports configuration via API
+- Opens browser (unless `--headless`)
+
+Flags: `--headless`, `--verbose`
+
+**stop.sh** - Clean shutdown
+- Stops all containers gracefully
+- Preserves data and configuration
+
+### Internal Scripts
+
+**scripts/internal/init-webui.sh** - Admin creation and config import
+- Checks if users exist in database
+- Creates default admin via signup API (if no users)
+- Authenticates to get JWT token
+- Imports configuration via authenticated API
+- Displays credentials
+
+**scripts/internal/wait-for-db.sh** - Database readiness check
+- Polls for webui.db file
+- Verifies database is accessible
+- Timeout: 60 seconds
+
+---
 
 ## Troubleshooting
 
-### Services won't start?
+### Setup Issues
+
+**Setup script fails:**
+```bash
+# Check prerequisites
+docker info                  # Docker running?
+docker compose version       # Compose installed?
+openssl version             # OpenSSL available?
+
+# View detailed errors
+./setup.sh
+```
+
+**Wrong template selected:**
+```bash
+make clean      # Remove generated files
+make setup      # Re-run interactive setup
+```
+
+### Services Won't Start
 
 ```bash
 # Check service status
 make status
 
-# View logs
-make logs              # All services
-make logs-ollama       # Specific service
+# View all logs
+make logs
+
+# View specific service
+make logs-ollama
 make logs-open-webui
+make logs-searxng
+
+# Check Docker
+docker info
+docker compose ps
 ```
 
-### Web search not working?
+### Web Search Not Working
 
 ```bash
-# Restart services (will reinitialize web search if needed)
+# Check if configured
+curl -s http://localhost:11300/api/v1/configs | jq '.rag.web.search'
+
+# Restart (will reinitialize if needed)
 make restart
 
-# Or manually reinitialize
-./scripts/internal/init-webui.sh --verbose
+# Manual config import (if needed)
+# 1. Get API key from Settings → Account → API Keys
+# 2. Run:
+./scripts/import-config.sh 'your-api-key-here'
+
+# Or import via UI:
+# Settings → Admin Settings → General → Import Config
+# Upload: config-templates/default-config.json
 ```
 
-### GPU not detected?
+### GPU Not Detected (AMD)
 
 ```bash
-# Check Ollama logs for GPU info
-make logs-ollama | grep -i vulkan  # AMD
-make logs-ollama | grep -i cuda    # NVIDIA
+# Check group membership
+groups | grep -E 'video|render'
 
-# Verify device access
-ls -la /dev/dri  # AMD
-nvidia-smi       # NVIDIA
+# If missing, add yourself
+sudo usermod -aG video $USER
+sudo usermod -aG render $USER
+# Log out and back in
 
-# Re-run setup to change template
-make clean
-make setup
+# Verify group IDs in docker-compose.yml
+grep -A 2 "group_add:" docker-compose.yml
+
+# Check Ollama logs
+make logs-ollama | grep -i vulkan
 ```
 
-### Need to start over?
+### GPU Not Detected (NVIDIA)
+
+```bash
+# Test NVIDIA runtime
+nvidia-smi
+docker run --rm --runtime=nvidia nvidia/cuda:12.0-base nvidia-smi
+
+# Check Ollama logs
+make logs-ollama | grep -i cuda
+
+# Verify NVIDIA runtime
+docker info | grep -i runtime
+```
+
+### macOS: Can't Connect to Ollama
+
+```bash
+# Check native Ollama is running
+curl http://localhost:11434/api/tags
+
+# If not running, start it
+ollama serve
+
+# Install if needed
+brew install ollama
+```
+
+### Admin Login Not Working
+
+Default credentials:
+- Email: `admin@localhost`
+- Password: `admin123`
+
+If you changed these in `.env` before setup, use those credentials instead.
+
+To reset admin password:
+```bash
+# Stop services
+make stop
+
+# Remove database (WARNING: deletes all data)
+rm -rf data/open-webui/webui.db
+
+# Restart (will recreate admin)
+make start
+```
+
+### Need to Start Over?
 
 ```bash
 # Full reset (WARNING: deletes all data and configuration)
@@ -183,15 +388,73 @@ make reset
 
 # Then re-run setup
 make setup
+make start
 ```
+
+---
+
+## Advanced Configuration
+
+### Manual Template Selection
+
+If auto-detection selects the wrong template:
+
+```bash
+# During setup, choose manually when prompted
+make setup
+
+# Or copy template directly
+cp config-templates/docker-compose.nvidia.yml docker-compose.yml
+cp .env.example .env
+# Edit .env and generate secrets
+make start
+```
+
+### Custom Admin Credentials
+
+Edit `.env` before running `make setup`:
+
+```bash
+WEBUI_ADMIN_NAME=myadmin
+WEBUI_ADMIN_EMAIL=admin@mydomain.com
+WEBUI_ADMIN_PASSWORD=SuperSecurePassword123!
+```
+
+### Disable Signup After Setup
+
+Edit `.env` after creating your admin account:
+
+```bash
+ENABLE_SIGNUP=false
+```
+
+Then restart: `make restart`
+
+### AMD GPU: Custom Group IDs
+
+The setup script auto-detects group IDs, but if you need to set them manually:
+
+```bash
+# Get IDs
+getent group video | cut -d: -f3
+getent group render | cut -d: -f3
+
+# Edit docker-compose.yml
+nano docker-compose.yml
+# Find and replace VIDEO_GROUP_ID and RENDER_GROUP_ID
+```
+
+---
 
 ## Documentation
 
-- [Detailed Setup Guide](SETUP.md)
-- [AI Agent Context](AGENTS.md) - For AI coding assistants (Claude Code, Cursor, Copilot, etc.)
+- [Template Documentation](config-templates/README.md) - Details on each Docker Compose template
+- [Claude Code Integration](CLAUDE.md) - For AI coding assistants
 - [Open-WebUI Docs](https://docs.openwebui.com/)
 - [Ollama Documentation](https://github.com/ollama/ollama)
 - [SearXNG Documentation](https://docs.searxng.org/)
+
+---
 
 ## License
 
@@ -203,6 +466,6 @@ Issues and pull requests welcome!
 
 ## Acknowledgments
 
-- [Open-WebUI](https://github.com/open-webui/open-webui)
-- [Ollama](https://github.com/ollama/ollama)
-- [SearXNG](https://github.com/searxng/searxng)
+- [Open-WebUI](https://github.com/open-webui/open-webui) - Beautiful web interface
+- [Ollama](https://github.com/ollama/ollama) - Local LLM inference
+- [SearXNG](https://github.com/searxng/searxng) - Privacy-respecting search
