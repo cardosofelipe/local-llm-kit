@@ -68,8 +68,11 @@ Or use scripts directly:
 The `setup.sh` script auto-detects your hardware and configures the optimal template:
 
 **CPU-Only** - Works on any system, slower inference
+
 **NVIDIA GPU** - RTX/GTX series, requires NVIDIA Container Toolkit
+
 **AMD GPU** - RDNA 2/3 (RX 6000/7000/8000), uses Vulkan acceleration
+
 **macOS** - Native Ollama + Docker WebUI for full Metal GPU acceleration
 
 See [config-templates/README.md](config-templates/README.md) for details on each template.

@@ -2,9 +2,9 @@
 # Hardware detection utilities for Local-LLM-Kit
 # Provides: GPU detection, group ID resolution, hardware verification
 
-# Source common utilities
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
+# Source common utilities (use local var to not overwrite caller's SCRIPT_DIR)
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_LIB_DIR/common.sh"
 
 # Detect GPU type on Linux
 # Returns: nvidia, amd, or none

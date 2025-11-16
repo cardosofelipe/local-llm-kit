@@ -1,9 +1,9 @@
 #!/bin/bash
 # Secret generation and management for Local-LLM-Kit
 
-# Source common utilities
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
+# Source common utilities (use local var to not overwrite caller's SCRIPT_DIR)
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_LIB_DIR/common.sh"
 
 # Generate a random secret using openssl
 # Returns: 64-character hexadecimal string

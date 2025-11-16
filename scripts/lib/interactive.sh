@@ -1,10 +1,10 @@
 #!/bin/bash
 # Interactive prompt utilities for Local-LLM-Kit setup
 
-# Source common utilities
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
-source "$SCRIPT_DIR/hardware.sh"
+# Source dependencies (use local var to not overwrite caller's SCRIPT_DIR)
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_LIB_DIR/common.sh"
+source "$_LIB_DIR/hardware.sh"
 
 # Prompt for template selection
 # Usage: template=$(prompt_template_selection "detected-type")

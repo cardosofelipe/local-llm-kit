@@ -1,9 +1,9 @@
 #!/bin/bash
 # State checking utilities for Local-LLM-Kit
 
-# Source common utilities
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
+# Source common utilities (use local var to not overwrite caller's SCRIPT_DIR)
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_LIB_DIR/common.sh"
 
 # Check if setup has been completed
 check_setup_complete() {
