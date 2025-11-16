@@ -50,8 +50,8 @@ services:
       - "RENDER_GROUP_ID"   # Will be replaced with actual render group ID
 
     volumes:
+      - ${OLLAMA_CONFIG_PATH:-./config/ollama}:/root/.ollama
       - ${OLLAMA_MODELS_PATH:-./data/models/ollama}:/root/.ollama/models
-      - ${OLLAMA_CONFIG_PATH:-./config/ollama}:/root/.ollama/config
 
     environment:
       - OLLAMA_MODELS=/root/.ollama/models

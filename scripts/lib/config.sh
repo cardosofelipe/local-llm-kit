@@ -46,7 +46,8 @@ init_searxng_config() {
             return 1
         fi
     else
-        log_verbose "SearXNG configuration already exists, skipping"
+        # Configuration already exists, skip
+        return 0
     fi
 
     return 0
@@ -59,8 +60,6 @@ init_ollama_config() {
 
     # Create config directory
     mkdir -p "$config_dir"
-
-    log_verbose "Ollama configuration directory ready"
     return 0
 }
 
