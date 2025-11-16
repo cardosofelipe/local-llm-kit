@@ -151,14 +151,19 @@ echo "  → Open-WebUI: http://localhost:${OPEN_WEBUI_PORT:-11300}"
 echo "  → SearXNG:    http://localhost:${SEARXNG_PORT:-11380}"
 echo ""
 
-if ! $USING_MACOS_TEMPLATE; then
-    log_info "First time? Create your admin account at Open-WebUI"
-else
+if $USING_MACOS_TEMPLATE; then
     log_info "Using native Ollama on macOS for GPU acceleration"
-    log_info "First time? Create your admin account at Open-WebUI"
 fi
+log_info "First time? Click \"Getting Started\" and create your admin account at Open-WebUI"
 
 echo ""
+
+# Wait for Open-WebUI to be fully ready before opening browser
+if ! $HEADLESS; then
+    log_info "Waiting for Open-WebUI to be fully ready..."
+    sleep 7
+    echo ""
+fi
 
 # Open browser (if not headless)
 if ! $HEADLESS; then
