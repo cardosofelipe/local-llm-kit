@@ -28,13 +28,6 @@ services:
 
     # NVIDIA GPU Configuration
     runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
     volumes:
       - ${OLLAMA_MODELS_PATH:-./data/models/ollama}:/root/.ollama/models

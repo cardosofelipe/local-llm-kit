@@ -194,22 +194,17 @@ display_amd_group_instructions() {
     fi
 }
 
-# Display NVIDIA toolkit verification
+# Display NVIDIA runtime info
 display_nvidia_verification() {
     echo "" >&2
-    log_info "Verifying NVIDIA Container Toolkit..." >&2
+    log_info "NVIDIA GPU support uses 'runtime: nvidia' in Docker" >&2
+    log_info "Make sure Docker is configured with the NVIDIA runtime" >&2
+    echo "" >&2
 
-    if verify_nvidia_toolkit; then
-        log_success "NVIDIA Container Toolkit is working" >&2
+    # Optional: Test if nvidia-smi works in a container (non-blocking)
+    if docker run --rm --runtime=nvidia nvidia/cuda:12.0-base nvidia-smi &>/dev/null; then
+        log_success "NVIDIA runtime verified - GPU access working!" >&2
     else
-        log_warning "NVIDIA Container Toolkit verification failed" >&2
-        echo "" >&2
-        log_info "Install it from:" >&2
-        echo "  https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" >&2
-        echo "" >&2
-
-        if ! confirm_yes_no "Continue anyway?" "y"; then
-            exit 0
-        fi
+        log_warning "Could not verify NVIDIA runtime (this is OK if Docker is configured)" >&2
     fi
 }
