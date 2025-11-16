@@ -3,7 +3,7 @@ use_default_settings: true
 server:
   # IMPORTANT: Generate a unique secret key with: openssl rand -hex 32
   # This key is used to secure sessions and should be changed before deployment
-  secret_key: "6e2377827e8e3c232428c2518000eb51ff3e323e2d655930abbd353c76c29aae"
+  secret_key: "06890d2ef7cf0b75beac4ac15ec003f5b893cd673b60882d1ac1cac7b3d32ddd"
   limiter: false
   image_proxy: false
 

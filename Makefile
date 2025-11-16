@@ -65,8 +65,13 @@ reset:
 	@read -p "Are you absolutely sure? Type 'yes' to confirm: " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
 		docker compose down -v; \
-		rm -rf data/; \
+		if [ -d data/ ]; then \
+			echo "Removing data directory (may require sudo)..."; \
+			docker run --rm -v "$(shell pwd)/data:/data" alpine sh -c "rm -rf /data/*" || \
+			sudo rm -rf data/; \
+		fi; \
 		rm -f .setup-complete docker-compose.yml .env; \
+		touch data/.gitkeep; \
 		echo ""; \
 		echo "✓ Reset complete. Run 'make setup' to reinitialize."; \
 	else \

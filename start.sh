@@ -63,6 +63,9 @@ if check_containers_running; then
     docker compose ps
     echo ""
     log_info "Use 'make restart' or './stop.sh && ./start.sh' to restart"
+    log_info "Access points:"
+    echo "  → Open-WebUI: http://localhost:${OPEN_WEBUI_PORT:-11300}"
+    echo "  → SearXNG:    http://localhost:${SEARXNG_PORT:-11380}"
     exit 0
 fi
 
@@ -160,8 +163,8 @@ echo ""
 
 # Wait for Open-WebUI to be fully ready before opening browser
 if ! $HEADLESS; then
-    log_info "Waiting for Open-WebUI to be fully ready..."
-    sleep 7
+    log_info "Waiting for Open-WebUI to be fully ready (10s)..."
+    sleep 10
     echo ""
 fi
 

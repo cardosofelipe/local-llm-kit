@@ -67,7 +67,7 @@ check_webui_configured() {
     fi
 
     # Query database for web search config
-    local result=$(docker run --rm -v "$(pwd)/data/open-webui:/data" python:3.11-slim python3 -c "
+    docker run --rm -v "$(pwd)/data/open-webui:/data" python:3.11-slim python3 -c "
 import sqlite3
 import json
 import sys
@@ -87,9 +87,7 @@ try:
     sys.exit(1)
 except:
     sys.exit(1)
-" 2>/dev/null)
-
-    return $?
+" 2>/dev/null
 }
 
 # Check if docker-compose.yml exists
