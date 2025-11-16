@@ -5,13 +5,20 @@
 # SUPPORTED: RTX series, GTX series, Datacenter GPUs (A100, H100, etc.)
 #
 # PREREQUISITES:
-#   1. NVIDIA Driver installed (525.x or newer recommended)
-#   2. NVIDIA Container Toolkit installed
-#      Installation: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+#   1. NVIDIA Driver installed
+#      Check: nvidia-smi
 #
-# VERIFY SETUP:
-#   nvidia-smi                                    # Check driver and GPU
-#   docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi  # Test container access
+#   2. Docker configured with NVIDIA runtime
+#      Usually happens automatically when you install nvidia-docker2 package
+#      or NVIDIA Container Toolkit on your host system
+#
+# VERIFY GPU ACCESS AFTER STARTING:
+#   docker compose logs ollama | grep -i cuda
+#   Should see: "CUDA compute capability" or similar
+#
+# IF GPU NOT DETECTED:
+#   Your host may need nvidia-docker2 or nvidia-container-toolkit package
+#   But if this worked before, it's probably already installed!
 #
 # PERFORMANCE:
 #   - Small models (7B): 20-60 tokens/second

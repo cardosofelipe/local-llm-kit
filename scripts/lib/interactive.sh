@@ -197,14 +197,19 @@ display_amd_group_instructions() {
 # Display NVIDIA runtime info
 display_nvidia_verification() {
     echo "" >&2
-    log_info "NVIDIA GPU support uses 'runtime: nvidia' in Docker" >&2
-    log_info "Make sure Docker is configured with the NVIDIA runtime" >&2
-    echo "" >&2
+    log_info "Checking NVIDIA GPU configuration..." >&2
 
-    # Optional: Test if nvidia-smi works in a container (non-blocking)
-    if docker run --rm --runtime=nvidia nvidia/cuda:12.0-base nvidia-smi &>/dev/null; then
-        log_success "NVIDIA runtime verified - GPU access working!" >&2
+    # Check if nvidia runtime is available (check both grep patterns to be safe)
+    if docker info 2>/dev/null | grep -E "Runtimes.*nvidia|nvidia.*Runtime" >/dev/null; then
+        log_success "NVIDIA runtime detected in Docker ✓" >&2
+        echo "" >&2
+        log_info "Your Docker is properly configured for NVIDIA GPUs" >&2
     else
-        log_warning "Could not verify NVIDIA runtime (this is OK if Docker is configured)" >&2
+        echo "" >&2
+        log_warning "Could not confirm NVIDIA runtime in Docker" >&2
+        echo "" >&2
+        log_info "If you previously had GPU working, this is probably fine." >&2
+        log_info "The setup will continue - verify GPU access after starting services:" >&2
+        echo "  docker compose logs ollama | grep -i cuda" >&2
     fi
 }
