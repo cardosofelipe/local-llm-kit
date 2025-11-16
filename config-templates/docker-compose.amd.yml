@@ -91,6 +91,7 @@ services:
 
     environment:
       - SEARXNG_BASE_URL=http://searxng:8080
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-}
 
     cap_drop:
       - ALL

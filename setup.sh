@@ -174,6 +174,12 @@ if [ ! -f .env ]; then
     # Generate and update secrets
     generate_all_secrets
 
+    # Initialize config files from templates
+    # Get the generated secret from .env
+    SEARXNG_SECRET=$(grep "^SEARXNG_SECRET=" .env | cut -d'=' -f2)
+    source "$SCRIPT_DIR/scripts/lib/config.sh"
+    init_all_configs "$SEARXNG_SECRET"
+
     # Update storage paths
     update_env_secret "OLLAMA_MODELS_PATH" "$OLLAMA_MODELS_PATH"
     update_env_secret "OPENWEBUI_DATA_PATH" "$OPENWEBUI_DATA_PATH"

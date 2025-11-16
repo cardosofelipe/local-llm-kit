@@ -36,24 +36,12 @@ update_env_secret() {
     fi
 }
 
-# Update SearXNG secret in settings.yml
+# Update SearXNG secret in .env file
 # Usage: update_searxng_secret "abc123..."
 update_searxng_secret() {
     local secret="$1"
-    local config_file="config/searxng/settings.yml"
-
-    if [ ! -f "$config_file" ]; then
-        log_error "SearXNG config not found: $config_file"
-        return 1
-    fi
-
-    # Replace the secret_key line in YAML
-    # Use different sed syntax for macOS vs Linux
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|secret_key:.*|secret_key: \"${secret}\"|" "$config_file"
-    else
-        sed -i "s|secret_key:.*|secret_key: \"${secret}\"|" "$config_file"
-    fi
+    # SearXNG uses SEARXNG_SECRET env var (16-byte hex for secret_key)
+    update_env_secret "SEARXNG_SECRET" "$secret"
 }
 
 # Validate that secret is not a placeholder
