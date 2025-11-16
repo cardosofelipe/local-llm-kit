@@ -13,9 +13,10 @@ prompt_template_selection() {
     local detected="$1"
     local default_idx=1
 
-    echo ""
-    log_header "Select Docker Compose Template"
-    echo ""
+    # All prompts to stderr so they're not captured by command substitution
+    echo "" >&2
+    log_header "Select Docker Compose Template" >&2
+    echo "" >&2
 
     # Set default based on detection
     case "$detected" in
@@ -25,11 +26,11 @@ prompt_template_selection() {
         *) default_idx=1 ;;
     esac
 
-    echo "1) CPU-only (works on any system)"
-    echo "2) NVIDIA GPU (requires NVIDIA Container Toolkit)"
-    echo "3) AMD GPU (Vulkan acceleration)"
-    echo "4) macOS (native Ollama + Docker WebUI)"
-    echo ""
+    echo "1) CPU-only (works on any system)" >&2
+    echo "2) NVIDIA GPU (requires NVIDIA Container Toolkit)" >&2
+    echo "3) AMD GPU (Vulkan acceleration)" >&2
+    echo "4) macOS (native Ollama + Docker WebUI)" >&2
+    echo "" >&2
     read -p "Select template [${default_idx}]: " -r choice
 
     # Use default if empty
@@ -43,7 +44,7 @@ prompt_template_selection() {
         3) echo "docker-compose.amd.yml" ;;
         4) echo "docker-compose.macos.yml" ;;
         *)
-            log_error "Invalid selection"
+            echo "Invalid selection" >&2
             prompt_template_selection "$detected"
             ;;
     esac
@@ -53,13 +54,13 @@ prompt_template_selection() {
 # Usage: prompt_storage_paths
 # Sets global variables: OLLAMA_MODELS_PATH, OPENWEBUI_DATA_PATH
 prompt_storage_paths() {
-    echo ""
-    log_header "Storage Configuration"
-    echo ""
+    echo "" >&2
+    log_header "Storage Configuration" >&2
+    echo "" >&2
 
-    log_info "Where should Ollama store downloaded models?"
-    log_info "Models can be large (4GB-100GB per model)"
-    echo ""
+    log_info "Where should Ollama store downloaded models?" >&2
+    log_info "Models can be large (4GB-100GB per model)" >&2
+    echo "" >&2
 
     read -p "Model storage path [./data/models/ollama]: " -r models_path
     if [ -z "$models_path" ]; then
@@ -68,7 +69,7 @@ prompt_storage_paths() {
         OLLAMA_MODELS_PATH="$models_path"
     fi
 
-    echo ""
+    echo "" >&2
     read -p "WebUI data path [./data/open-webui]: " -r webui_path
     if [ -z "$webui_path" ]; then
         OPENWEBUI_DATA_PATH="./data/open-webui"
@@ -87,9 +88,10 @@ prompt_performance_tier() {
     local recommended="$1"
     local default_idx=2
 
-    echo ""
-    log_header "Performance Configuration"
-    echo ""
+    # All prompts to stderr
+    echo "" >&2
+    log_header "Performance Configuration" >&2
+    echo "" >&2
 
     case "$recommended" in
         low) default_idx=1 ;;
@@ -97,12 +99,12 @@ prompt_performance_tier() {
         high) default_idx=3 ;;
     esac
 
-    echo "1) Low    - Conservative (1 parallel, 1 model loaded)"
-    echo "2) Medium - Balanced    (2 parallel, 1 model loaded)"
-    echo "3) High   - Aggressive  (4 parallel, 2 models loaded)"
-    echo ""
-    log_info "Recommended for your hardware: ${recommended}"
-    echo ""
+    echo "1) Low    - Conservative (1 parallel, 1 model loaded)" >&2
+    echo "2) Medium - Balanced    (2 parallel, 1 model loaded)" >&2
+    echo "3) High   - Aggressive  (4 parallel, 2 models loaded)" >&2
+    echo "" >&2
+    log_info "Recommended for your hardware: ${recommended}" >&2
+    echo "" >&2
     read -p "Select performance tier [${default_idx}]: " -r choice
 
     if [ -z "$choice" ]; then
@@ -114,7 +116,7 @@ prompt_performance_tier() {
         2) echo "medium" ;;
         3) echo "high" ;;
         *)
-            log_error "Invalid selection"
+            echo "Invalid selection" >&2
             prompt_performance_tier "$recommended"
             ;;
     esac
@@ -135,56 +137,56 @@ prompt_confirm_template() {
 
 # Display macOS native Ollama instructions
 display_macos_instructions() {
-    echo ""
-    log_header "macOS Setup Requirements"
-    echo ""
-    log_warning "Docker on macOS cannot access GPU acceleration"
-    echo ""
-    log_info "For best performance, install Ollama natively:"
-    echo ""
-    echo "  1. Install Ollama:"
-    echo "     brew install ollama"
-    echo ""
-    echo "  2. Start Ollama service:"
-    echo "     ollama serve"
-    echo ""
-    echo "  3. Then run this setup to configure Docker WebUI"
-    echo ""
+    echo "" >&2
+    log_header "macOS Setup Requirements" >&2
+    echo "" >&2
+    log_warning "Docker on macOS cannot access GPU acceleration" >&2
+    echo "" >&2
+    log_info "For best performance, install Ollama natively:" >&2
+    echo "" >&2
+    echo "  1. Install Ollama:" >&2
+    echo "     brew install ollama" >&2
+    echo "" >&2
+    echo "  2. Start Ollama service:" >&2
+    echo "     ollama serve" >&2
+    echo "" >&2
+    echo "  3. Then run this setup to configure Docker WebUI" >&2
+    echo "" >&2
 
     if ! is_command_available ollama; then
-        log_warning "Ollama is not installed"
-        echo ""
+        log_warning "Ollama is not installed" >&2
+        echo "" >&2
         if ! confirm_yes_no "Continue anyway?" "n"; then
-            echo ""
-            log_info "Install Ollama and run setup again"
+            echo "" >&2
+            log_info "Install Ollama and run setup again" >&2
             exit 0
         fi
     elif ! check_native_ollama; then
-        log_warning "Ollama is installed but not running"
-        echo ""
-        log_info "Start Ollama with: ollama serve"
-        echo ""
+        log_warning "Ollama is installed but not running" >&2
+        echo "" >&2
+        log_info "Start Ollama with: ollama serve" >&2
+        echo "" >&2
         if ! confirm_yes_no "Continue anyway?" "n"; then
             exit 0
         fi
     else
-        log_success "Native Ollama detected and running!"
+        log_success "Native Ollama detected and running!" >&2
     fi
 }
 
 # Display AMD group setup instructions
 display_amd_group_instructions() {
     if ! check_user_in_gpu_groups; then
-        echo ""
-        log_warning "You are not in 'video' and 'render' groups"
-        echo ""
-        log_info "Add yourself to these groups for GPU access:"
-        echo ""
-        echo "  sudo usermod -aG video \$USER"
-        echo "  sudo usermod -aG render \$USER"
-        echo ""
-        log_warning "You must log out and back in for group changes to take effect"
-        echo ""
+        echo "" >&2
+        log_warning "You are not in 'video' and 'render' groups" >&2
+        echo "" >&2
+        log_info "Add yourself to these groups for GPU access:" >&2
+        echo "" >&2
+        echo "  sudo usermod -aG video \$USER" >&2
+        echo "  sudo usermod -aG render \$USER" >&2
+        echo "" >&2
+        log_warning "You must log out and back in for group changes to take effect" >&2
+        echo "" >&2
 
         if ! confirm_yes_no "Continue anyway?" "y"; then
             exit 0
@@ -194,17 +196,17 @@ display_amd_group_instructions() {
 
 # Display NVIDIA toolkit verification
 display_nvidia_verification() {
-    echo ""
-    log_info "Verifying NVIDIA Container Toolkit..."
+    echo "" >&2
+    log_info "Verifying NVIDIA Container Toolkit..." >&2
 
     if verify_nvidia_toolkit; then
-        log_success "NVIDIA Container Toolkit is working"
+        log_success "NVIDIA Container Toolkit is working" >&2
     else
-        log_warning "NVIDIA Container Toolkit verification failed"
-        echo ""
-        log_info "Install it from:"
-        echo "  https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
-        echo ""
+        log_warning "NVIDIA Container Toolkit verification failed" >&2
+        echo "" >&2
+        log_info "Install it from:" >&2
+        echo "  https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" >&2
+        echo "" >&2
 
         if ! confirm_yes_no "Continue anyway?" "y"; then
             exit 0
