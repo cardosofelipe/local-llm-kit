@@ -185,6 +185,7 @@ make setup
 ## Documentation
 
 - [Detailed Setup Guide](SETUP.md)
+- [AI Agent Context](AGENTS.md) - For AI coding assistants (Claude Code, Cursor, Copilot, etc.)
 - [Open-WebUI Docs](https://docs.openwebui.com/)
 - [Ollama Documentation](https://github.com/ollama/ollama)
 - [SearXNG Documentation](https://docs.searxng.org/)
