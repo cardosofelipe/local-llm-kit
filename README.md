@@ -20,26 +20,42 @@ A complete, ready-to-deploy stack for running local Large Language Models with a
 git clone https://github.com/yourusername/local-llm-kit.git
 cd local-llm-kit
 
-# 2. Configure environment (required on first run)
-cp .env.example .env
-# Generate secrets and customize paths in .env
-sed -i "s/CHANGE_ME_GENERATE_WITH_OPENSSL/$(openssl rand -hex 32)/" .env
+# 2. Run interactive setup (detects hardware, generates config)
+make setup
 
-# 3. Update SearXNG secret key
-SECRET=$(openssl rand -hex 32)
-sed -i "s/CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32/$SECRET/" config/searxng/settings.yml
-
-# 4. Start the stack
-docker compose up -d
-
-# 5. Initialize web search configuration
-./init-webui-config.sh
-
-# 6. Access Open-WebUI
-open http://localhost:11300
+# 3. Start services
+make start
 ```
 
-Create your admin account on first visit. Web search will be enabled by default.
+Access Open-WebUI at **http://localhost:11300** and create your admin account.
+
+That's it! The setup script automatically:
+- Detects your OS and GPU
+- Selects the optimal Docker Compose template
+- Generates all secrets
+- Configures web search
+- Opens your browser (use `--headless` to skip)
+
+## Common Commands
+
+```bash
+make setup          # Interactive setup (first time only)
+make start          # Start all services
+make stop           # Stop all services
+make restart        # Restart services
+make status         # Check service health
+make logs           # View all logs
+make logs-ollama    # View specific service logs
+make reset          # Full reset (deletes all data)
+```
+
+Or use scripts directly:
+```bash
+./setup.sh                  # Interactive setup
+./start.sh                  # Start services
+./start.sh --headless       # Start without opening browser
+./stop.sh                   # Stop services
+```
 
 ## Requirements
 
@@ -47,46 +63,52 @@ Create your admin account on first visit. Web search will be enabled by default.
 - 8GB+ RAM (16GB+ recommended)
 - 10GB+ free disk space
 
-### GPU Support (Optional)
+## Hardware Support
 
-**AMD GPU:**
-- Already configured for AMD GPUs with Vulkan
-- Tested on: Radeon 8060S (RDNA 3.5)
+The `setup.sh` script auto-detects your hardware and configures the optimal template:
 
-**NVIDIA GPU:**
-- Uncomment NVIDIA runtime configuration in `docker-compose.yml`
-- Requires: NVIDIA Container Toolkit
+**CPU-Only** - Works on any system, slower inference
+**NVIDIA GPU** - RTX/GTX series, requires NVIDIA Container Toolkit
+**AMD GPU** - RDNA 2/3 (RX 6000/7000/8000), uses Vulkan acceleration
+**macOS** - Native Ollama + Docker WebUI for full Metal GPU acceleration
+
+See [config-templates/README.md](config-templates/README.md) for details on each template.
 
 ## Configuration
 
+Configuration is handled by `setup.sh`, but you can customize after setup:
+
 ### Storage Paths
 
-Edit `.env` to customize where models and data are stored:
+During setup, you'll be prompted for storage paths. To change them later, edit `.env`:
 
 ```bash
-# Use /data partition (recommended for large models)
-OLLAMA_MODELS_PATH=/data/models/ollama
-
-# Or keep everything in project directory (portable)
+# Models can be large (4GB-100GB per model)
 OLLAMA_MODELS_PATH=./data/models/ollama
+
+# Web UI data (database, uploads)
+OPENWEBUI_DATA_PATH=./data/open-webui
+```
+
+### Performance Tuning
+
+The setup script recommends settings based on your hardware. To adjust, edit `.env`:
+
+```bash
+# Performance tiers:
+# Low (CPU):    OLLAMA_NUM_PARALLEL=1, MAX_LOADED=1
+# Medium:       OLLAMA_NUM_PARALLEL=2, MAX_LOADED=1
+# High (GPU):   OLLAMA_NUM_PARALLEL=4, MAX_LOADED=2
+
+OLLAMA_NUM_PARALLEL=2
+OLLAMA_MAX_LOADED_MODELS=1
 ```
 
 ### Web Search
 
-Web search is automatically enabled after running `init-webui-config.sh`.
+Web search is automatically configured by `start.sh` on first run.
 
 Verify at: http://localhost:11300/admin/settings/web
-
-### GPU Configuration
-
-**For AMD GPUs (current setup):**
-- Set `OLLAMA_VULKAN=1` in `.env` (already configured)
-- Adjust `HSA_OVERRIDE_GFX_VERSION` for your GPU architecture
-
-**For NVIDIA GPUs:**
-1. Uncomment `runtime: nvidia` in `docker-compose.yml`
-2. Remove AMD-specific configuration
-3. See [GPU setup guide](SETUP.md#gpu-support)
 
 ## Ports
 
@@ -112,42 +134,52 @@ Verify at: http://localhost:11300/admin/settings/web
 
 ## Troubleshooting
 
+### Services won't start?
+
+```bash
+# Check service status
+make status
+
+# View logs
+make logs              # All services
+make logs-ollama       # Specific service
+make logs-open-webui
+```
+
 ### Web search not working?
 
 ```bash
-# Re-run initialization
-./init-webui-config.sh
+# Restart services (will reinitialize web search if needed)
+make restart
 
-# Check services
-docker compose ps
-
-# View logs
-docker compose logs -f open-webui
+# Or manually reinitialize
+./scripts/internal/init-webui.sh --verbose
 ```
 
 ### GPU not detected?
 
 ```bash
-# Check Ollama logs
-docker compose logs ollama | grep -i vulkan  # AMD
-docker compose logs ollama | grep -i cuda    # NVIDIA
+# Check Ollama logs for GPU info
+make logs-ollama | grep -i vulkan  # AMD
+make logs-ollama | grep -i cuda    # NVIDIA
 
 # Verify device access
 ls -la /dev/dri  # AMD
 nvidia-smi       # NVIDIA
+
+# Re-run setup to change template
+make clean
+make setup
 ```
 
-### Database issues?
+### Need to start over?
 
 ```bash
-# Restart services
-docker compose restart
+# Full reset (WARNING: deletes all data and configuration)
+make reset
 
-# Full reset (WARNING: deletes all data)
-docker compose down
-rm -rf data/open-webui/webui.db
-docker compose up -d
-./init-webui-config.sh
+# Then re-run setup
+make setup
 ```
 
 ## Documentation

@@ -1,0 +1,114 @@
+# Local-LLM-Kit: CPU-Only Configuration
+# https://github.com/yourusername/local-llm-kit
+#
+# TARGET HARDWARE: Systems without GPU (or for testing)
+# PERFORMANCE: Slower inference (CPU-only), suitable for:
+#   - Development/testing
+#   - Low-resource environments
+#   - Systems without compatible GPU
+#
+# REQUIREMENTS:
+#   - 8GB+ RAM (16GB+ recommended)
+#   - 4+ CPU cores recommended
+#   - 10GB+ disk space for models
+#
+# EXPECTED PERFORMANCE:
+#   - Small models (7B): 2-10 tokens/second
+#   - Large models (13B+): May be too slow for practical use
+
+services:
+  ollama:
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+
+    # NO GPU configuration for CPU-only mode
+
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-./data/models/ollama}:/root/.ollama/models
+      - ${OLLAMA_CONFIG_PATH:-./config/ollama}:/root/.ollama/config
+
+    environment:
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_HOST=0.0.0.0:11434
+
+      # Conservative CPU-only settings
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-1}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-1}
+
+    networks:
+      - ollama-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    volumes:
+      - ${SEARXNG_CONFIG_PATH:-./config/searxng}:/etc/searxng:rw
+
+    ports:
+      - "${SEARXNG_PORT:-11380}:8080"
+
+    networks:
+      - ollama-network
+
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-main}
+    container_name: open-webui
+    pull_policy: always
+    restart: unless-stopped
+
+    depends_on:
+      - ollama
+      - searxng
+
+    volumes:
+      - ${OPENWEBUI_DATA_PATH:-./data/open-webui}:/app/backend/data
+
+    ports:
+      - "${OPEN_WEBUI_PORT:-11300}:8080"
+
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+
+      # Web Search Configuration (PersistentConfig - applies on first boot)
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - RAG_WEB_SEARCH_RESULT_COUNT=5
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
+
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

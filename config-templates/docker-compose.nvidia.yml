@@ -1,0 +1,130 @@
+# Local-LLM-Kit: NVIDIA GPU Configuration
+# https://github.com/yourusername/local-llm-kit
+#
+# TARGET HARDWARE: Systems with NVIDIA GPUs
+# SUPPORTED: RTX series, GTX series, Datacenter GPUs (A100, H100, etc.)
+#
+# PREREQUISITES:
+#   1. NVIDIA Driver installed (525.x or newer recommended)
+#   2. NVIDIA Container Toolkit installed
+#      Installation: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+#
+# VERIFY SETUP:
+#   nvidia-smi                                    # Check driver and GPU
+#   docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi  # Test container access
+#
+# PERFORMANCE:
+#   - Small models (7B): 20-60 tokens/second
+#   - Large models (13B+): 10-30 tokens/second
+#   - Depends on VRAM and GPU model
+
+services:
+  ollama:
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+
+    # NVIDIA GPU Configuration
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-./data/models/ollama}:/root/.ollama/models
+      - ${OLLAMA_CONFIG_PATH:-./config/ollama}:/root/.ollama/config
+
+    environment:
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_HOST=0.0.0.0:11434
+
+      # GPU-optimized settings
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-4}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+
+      # NVIDIA-specific environment
+      - LD_LIBRARY_PATH=/usr/lib/ollama:/usr/lib/ollama/cuda_v12:/usr/local/nvidia/lib64
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_VISIBLE_DEVICES=0
+
+    networks:
+      - ollama-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    volumes:
+      - ${SEARXNG_CONFIG_PATH:-./config/searxng}:/etc/searxng:rw
+
+    ports:
+      - "${SEARXNG_PORT:-11380}:8080"
+
+    networks:
+      - ollama-network
+
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-main}
+    container_name: open-webui
+    pull_policy: always
+    restart: unless-stopped
+
+    depends_on:
+      - ollama
+      - searxng
+
+    volumes:
+      - ${OPENWEBUI_DATA_PATH:-./data/open-webui}:/app/backend/data
+
+    ports:
+      - "${OPEN_WEBUI_PORT:-11300}:8080"
+
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+
+      # Web Search Configuration (PersistentConfig - applies on first boot)
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - RAG_WEB_SEARCH_RESULT_COUNT=5
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
+
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

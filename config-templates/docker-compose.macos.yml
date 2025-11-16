@@ -1,0 +1,127 @@
+# Local-LLM-Kit: macOS Configuration (Native Ollama + Docker WebUI)
+# https://github.com/yourusername/local-llm-kit
+#
+# TARGET PLATFORM: macOS (Apple Silicon M1/M2/M3 or Intel)
+#
+# ⚠️  IMPORTANT: macOS REQUIRES NATIVE OLLAMA INSTALLATION
+#
+# WHY NOT DOCKER OLLAMA ON macOS?
+#   Docker Desktop on macOS runs containers in a Linux VM that CANNOT
+#   access your Mac's GPU (Metal). This results in:
+#   - 5-6x slower performance (CPU-only vs GPU-accelerated)
+#   - 100% CPU usage
+#   - Poor efficiency and battery drain
+#
+# RECOMMENDED SETUP:
+#   1. Install Ollama NATIVELY on macOS (gets full Metal GPU acceleration)
+#   2. Run Open-WebUI + SearXNG in Docker (connects to native Ollama)
+#
+# ═══════════════════════════════════════════════════════════════════
+# SETUP INSTRUCTIONS - FOLLOW THESE STEPS:
+# ═══════════════════════════════════════════════════════════════════
+#
+# 1. INSTALL NATIVE OLLAMA:
+#      brew install ollama
+#
+# 2. START OLLAMA SERVICE:
+#      ollama serve
+#
+#    (Keep this running in a terminal, or configure as launch agent)
+#
+# 3. VERIFY OLLAMA IS ACCESSIBLE:
+#      curl http://localhost:11434/api/tags
+#
+#    Should return JSON response (may be empty list initially)
+#
+# 4. START THIS DOCKER COMPOSE:
+#      docker compose up -d
+#
+# 5. ACCESS OPEN-WEBUI:
+#      http://localhost:11300
+#
+# ═══════════════════════════════════════════════════════════════════
+#
+# PERFORMANCE WITH NATIVE OLLAMA:
+#   - Apple M1/M2/M3: 20-80 tokens/second (depending on model and chip)
+#   - Full Metal GPU acceleration
+#   - Efficient power usage
+#
+# TROUBLESHOOTING:
+#   - If WebUI can't connect to Ollama:
+#     * Verify ollama serve is running: curl http://localhost:11434
+#     * Check Docker network: docker compose logs open-webui
+#
+
+services:
+  # ═══════════════════════════════════════════════════════════════════
+  # NOTE: NO OLLAMA CONTAINER - Using native Ollama on host instead
+  # ═══════════════════════════════════════════════════════════════════
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    volumes:
+      - ${SEARXNG_CONFIG_PATH:-./config/searxng}:/etc/searxng:rw
+
+    ports:
+      - "${SEARXNG_PORT:-11380}:8080"
+
+    networks:
+      - ollama-network
+
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-main}
+    container_name: open-webui
+    pull_policy: always
+    restart: unless-stopped
+
+    depends_on:
+      - searxng
+
+    volumes:
+      - ${OPENWEBUI_DATA_PATH:-./data/open-webui}:/app/backend/data
+
+    ports:
+      - "${OPEN_WEBUI_PORT:-11300}:8080"
+
+    environment:
+      # ═══════════════════════════════════════════════════════════════
+      # CRITICAL: Points to NATIVE Ollama on macOS host, not a container
+      # ═══════════════════════════════════════════════════════════════
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+
+      # Web Search Configuration (PersistentConfig - applies on first boot)
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - RAG_WEB_SEARCH_RESULT_COUNT=5
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
+
+    extra_hosts:
+      # Allows container to reach macOS host services
+      - host.docker.internal:host-gateway
+
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

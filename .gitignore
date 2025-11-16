@@ -7,6 +7,10 @@
 .env.local
 .env~
 
+# Generated files (created by setup.sh)
+docker-compose.yml
+.setup-complete
+
 # Backups
 *.backup
 *.bak

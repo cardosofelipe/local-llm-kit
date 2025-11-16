@@ -1,0 +1,141 @@
+# Local-LLM-Kit: AMD GPU Configuration
+# https://github.com/yourusername/local-llm-kit
+#
+# TARGET HARDWARE: Systems with AMD Radeon GPUs
+# SUPPORTED: RDNA 2/3 architecture (RX 6000/7000 series, Radeon 8000 series)
+#
+# ACCELERATION: Vulkan (ROCm also possible but more complex)
+#
+# PREREQUISITES:
+#   1. AMD GPU drivers installed (amdgpu or amdgpu-pro)
+#   2. Vulkan support (verify with: vulkaninfo)
+#   3. User in 'video' and 'render' groups
+#
+# VERIFY SETUP:
+#   ls -la /dev/dri              # Should show card* and render* devices
+#   groups                       # Should include 'video' and 'render'
+#   vulkaninfo | grep -i amd     # Verify Vulkan sees your GPU
+#
+# GPU ARCHITECTURE NOTES:
+#   HSA_OVERRIDE_GFX_VERSION must match your GPU architecture:
+#   - RDNA 3.5 (gfx1151 - Radeon 8060S, etc.): 11.0.0
+#   - RDNA 3   (gfx1100 - RX 7900, etc.):      11.0.0 or 11.5.1
+#   - RDNA 2   (gfx1030 - RX 6800, etc.):      10.3.0
+#   Customize in .env file if needed
+#
+# PERFORMANCE:
+#   - Small models (7B): 15-50 tokens/second
+#   - Large models (13B+): 8-25 tokens/second
+#   - Depends on VRAM and specific GPU model
+#
+# GROUP IDs (AUTO-DETECTED):
+#   setup.sh will replace VIDEO_GROUP_ID and RENDER_GROUP_ID
+#   with actual group IDs from your system during setup
+
+services:
+  ollama:
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+
+    # AMD GPU Configuration - Vulkan acceleration
+    devices:
+      - /dev/dri:/dev/dri
+
+    # Group access for GPU (IDs auto-detected by setup.sh)
+    group_add:
+      - "VIDEO_GROUP_ID"    # Will be replaced with actual video group ID
+      - "RENDER_GROUP_ID"   # Will be replaced with actual render group ID
+
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-./data/models/ollama}:/root/.ollama/models
+      - ${OLLAMA_CONFIG_PATH:-./config/ollama}:/root/.ollama/config
+
+    environment:
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_HOST=0.0.0.0:11434
+
+      # GPU-optimized settings
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-4}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+
+      # AMD GPU with Vulkan
+      - OLLAMA_VULKAN=1
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}
+
+    networks:
+      - ollama-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    volumes:
+      - ${SEARXNG_CONFIG_PATH:-./config/searxng}:/etc/searxng:rw
+
+    ports:
+      - "${SEARXNG_PORT:-11380}:8080"
+
+    networks:
+      - ollama-network
+
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-main}
+    container_name: open-webui
+    pull_policy: always
+    restart: unless-stopped
+
+    depends_on:
+      - ollama
+      - searxng
+
+    volumes:
+      - ${OPENWEBUI_DATA_PATH:-./data/open-webui}:/app/backend/data
+
+    ports:
+      - "${OPEN_WEBUI_PORT:-11300}:8080"
+
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+
+      # Web Search Configuration (PersistentConfig - applies on first boot)
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - RAG_WEB_SEARCH_RESULT_COUNT=5
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
+
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
