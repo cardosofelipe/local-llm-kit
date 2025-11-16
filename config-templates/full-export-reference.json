@@ -1,0 +1,143 @@
+{
+  "version": 0,
+  "ui": {
+    "enable_signup": false
+  },
+  "rag": {
+    "web_search": {
+      "enable": true,
+      "engine": "searxng",
+      "result_count": 5,
+      "concurrent_requests": 10,
+      "timeout": 15
+    },
+    "template": "### Task:\nRespond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id=\"1\">).\n\n### Guidelines:\n- If you don't know the answer, clearly state that.\n- If uncertain, ask the user for clarification.\n- Respond in the same language as the user's query.\n- If the context is unreadable or of poor quality, inform the user and provide the best possible answer.\n- If the answer isn't present in the context but you possess the knowledge, explain this to the user and provide the answer using your own understanding.\n- **Only include inline citations using [id] (e.g., [1], [2]) when the <source> tag includes an id attribute.**\n- Do not cite if the <source> tag does not contain an id attribute.\n- Do not use XML tags in your response.\n- Ensure citations are concise and directly related to the information provided.\n\n### Example of Citation:\nIf the user asks about a specific topic and the information is found in a source with a provided id attribute, the response should include the citation like in the following example:\n* \"According to the study, the proposed method increases efficiency by 20% [1].\"\n\n### Output:\nProvide a clear and direct response to the user's query, including inline citations in the format [id] only when the <source> tag with id attribute is present in the context.\n\n<context>\n{{CONTEXT}}\n</context>\n\n<user_query>\n{{QUERY}}\n</user_query>\n",
+    "top_k": 3,
+    "bypass_embedding_and_retrieval": false,
+    "full_context": false,
+    "enable_hybrid_search": false,
+    "top_k_reranker": 3,
+    "relevance_threshold": 0,
+    "hybrid_bm25_weight": 0.5,
+    "CONTENT_EXTRACTION_ENGINE": "",
+    "pdf_extract_images": false,
+    "datalab_marker_api_key": "",
+    "datalab_marker_api_base_url": "",
+    "datalab_marker_additional_config": "",
+    "datalab_marker_skip_cache": false,
+    "datalab_marker_force_ocr": false,
+    "datalab_marker_paginate": false,
+    "datalab_marker_strip_existing_ocr": false,
+    "datalab_marker_disable_image_extraction": false,
+    "datalab_marker_format_lines": false,
+    "datalab_marker_output_format": "markdown",
+    "DATALAB_MARKER_USE_LLM": false,
+    "external_document_loader_url": "",
+    "external_document_loader_api_key": "",
+    "tika_server_url": "http://tika:9998",
+    "docling_server_url": "http://docling:5001",
+    "docling_params": {},
+    "docling_do_ocr": true,
+    "docling_force_ocr": false,
+    "docling_ocr_engine": "tesseract",
+    "docling_ocr_lang": "eng,fra,deu,spa",
+    "docling_pdf_backend": "dlparse_v4",
+    "docling_table_mode": "accurate",
+    "docling_pipeline": "standard",
+    "docling_do_picture_description": false,
+    "docling_picture_description_mode": "",
+    "docling_picture_description_local": {},
+    "docling_picture_description_api": {},
+    "document_intelligence_endpoint": "",
+    "document_intelligence_key": "",
+    "MISTRAL_OCR_API_BASE_URL": "https://api.mistral.ai/v1",
+    "mistral_ocr_api_key": "",
+    "mineru_api_mode": "local",
+    "mineru_api_url": "http://localhost:8000",
+    "mineru_api_key": "",
+    "mineru_params": {},
+    "reranking_engine": "",
+    "external_reranker_url": "",
+    "external_reranker_api_key": "",
+    "reranking_model": "",
+    "text_splitter": "",
+    "chunk_size": 1000,
+    "chunk_overlap": 100,
+    "file": {
+      "max_size": null,
+      "max_count": null,
+      "allowed_extensions": []
+    },
+    "web": {
+      "search": {
+        "enable": true,
+        "engine": "searxng",
+        "trust_env": false,
+        "result_count": 5,
+        "concurrent_requests": 10,
+        "domain": {
+          "filter_list": []
+        },
+        "bypass_embedding_and_retrieval": false,
+        "bypass_web_loader": false,
+        "ollama_cloud_api_key": "",
+        "searxng_query_url": "http://searxng:8080/search?q=<query>",
+        "yacy_query_url": "",
+        "yacy_username": "",
+        "yacy_password": "",
+        "google_pse_api_key": "",
+        "google_pse_engine_id": "",
+        "brave_search_api_key": "",
+        "kagi_search_api_key": "",
+        "mojeek_search_api_key": "",
+        "bocha_search_api_key": "",
+        "serpstack_api_key": "",
+        "serpstack_https": true,
+        "serper_api_key": "",
+        "serply_api_key": "",
+        "tavily_api_key": "",
+        "searchapi_api_key": "",
+        "searchapi_engine": "",
+        "serpapi_api_key": "",
+        "serpapi_engine": "",
+        "jina_api_key": "",
+        "bing_search_v7_endpoint": "https://api.bing.microsoft.com/v7.0/search",
+        "bing_search_v7_subscription_key": "",
+        "exa_api_key": "",
+        "perplexity_api_key": "",
+        "perplexity_model": "sonar",
+        "perplexity_search_context_usage": "medium",
+        "sougou_api_sid": "",
+        "sougou_api_sk": "",
+        "external_web_search_url": "",
+        "external_web_search_api_key": "",
+        "tavily_extract_depth": "basic"
+      },
+      "loader": {
+        "concurrent_requests": 10,
+        "engine": "",
+        "ssl_verification": true,
+        "playwright_ws_url": "",
+        "playwright_timeout": 10000,
+        "firecrawl_api_key": "",
+        "firecrawl_api_url": "https://api.firecrawl.dev",
+        "external_web_loader_url": "",
+        "external_web_loader_api_key": ""
+      }
+    },
+    "youtube_loader_language": [
+      "en"
+    ],
+    "youtube_loader_proxy_url": ""
+  },
+  "file": {
+    "image_compression_width": null,
+    "image_compression_height": null
+  },
+  "google_drive": {
+    "enable": false
+  },
+  "onedrive": {
+    "enable": false
+  }
+}
