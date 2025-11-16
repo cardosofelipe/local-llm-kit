@@ -163,7 +163,10 @@ if [ "$import_http_code" = "200" ] || [ "$import_http_code" = "201" ]; then
     exit 0
 else
     log_error "Failed to import configuration (HTTP $import_http_code)"
-    log_verbose "Response: $import_body"
+    echo ""
+    echo "API Response:"
+    echo "$import_body"
+    echo ""
 
     echo ""
     echo "Admin user was created but config import failed."

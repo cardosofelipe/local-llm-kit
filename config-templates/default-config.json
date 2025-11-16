@@ -1,60 +1,62 @@
 {
-  "version": 0,
-  "ui": {
-    "enable_signup": false
-  },
-  "rag": {
-    "template": "### Task:\nRespond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id=\"1\">).\n\n### Guidelines:\n- If you don't know the answer, clearly state that.\n- If uncertain, ask the user for clarification.\n- Respond in the same language as the user's query.\n- If the context is unreadable or of poor quality, inform the user and provide the best possible answer.\n- If the answer isn't present in the context but you possess the knowledge, explain this to the user and provide the answer using your own understanding.\n- **Only include inline citations using [id] (e.g., [1], [2]) when the <source> tag includes an id attribute.**\n- Do not cite if the <source> tag does not contain an id attribute.\n- Do not use XML tags in your response.\n- Ensure citations are concise and directly related to the information provided.\n\n### Example of Citation:\nIf the user asks about a specific topic and the information is found in a source with a provided id attribute, the response should include the citation like in the following example:\n* \"According to the study, the proposed method increases efficiency by 20% [1].\"\n\n### Output:\nProvide a clear and direct response to the user's query, including inline citations in the format [id] only when the <source> tag with id attribute is present in the context.\n\n<context>\n{{CONTEXT}}\n</context>\n\n<user_query>\n{{QUERY}}\n</user_query>\n",
-    "top_k": 3,
-    "bypass_embedding_and_retrieval": false,
-    "full_context": false,
-    "enable_hybrid_search": false,
-    "top_k_reranker": 3,
-    "relevance_threshold": 0,
-    "hybrid_bm25_weight": 0.5,
-    "CONTENT_EXTRACTION_ENGINE": "",
-    "pdf_extract_images": true,
-    "docling_do_ocr": true,
-    "docling_force_ocr": false,
-    "docling_ocr_engine": "tesseract",
-    "docling_ocr_lang": "eng,fra,deu,spa",
-    "docling_pdf_backend": "dlparse_v4",
-    "docling_table_mode": "accurate",
-    "docling_pipeline": "standard",
-    "text_splitter": "",
-    "chunk_size": 1000,
-    "chunk_overlap": 100,
-    "file": {
-      "max_size": null,
-      "max_count": null,
-      "allowed_extensions": []
+  "config": {
+    "version": 0,
+    "ui": {
+      "enable_signup": false
     },
-    "web": {
-      "search": {
-        "enable": true,
-        "engine": "searxng",
-        "trust_env": false,
-        "result_count": 5,
-        "concurrent_requests": 10,
-        "domain": {
-          "filter_list": []
-        },
-        "bypass_embedding_and_retrieval": false,
-        "bypass_web_loader": false,
-        "searxng_query_url": "http://searxng:8080/search?q=<query>"
+    "rag": {
+      "template": "### Task:\nRespond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id=\"1\">).\n\n### Guidelines:\n- If you don't know the answer, clearly state that.\n- If uncertain, ask the user for clarification.\n- Respond in the same language as the user's query.\n- If the context is unreadable or of poor quality, inform the user and provide the best possible answer.\n- If the answer isn't present in the context but you possess the knowledge, explain this to the user and provide the answer using your own understanding.\n- **Only include inline citations using [id] (e.g., [1], [2]) when the <source> tag includes an id attribute.**\n- Do not cite if the <source> tag does not contain an id attribute.\n- Do not use XML tags in your response.\n- Ensure citations are concise and directly related to the information provided.\n\n### Example of Citation:\nIf the user asks about a specific topic and the information is found in a source with a provided id attribute, the response should include the citation like in the following example:\n* \"According to the study, the proposed method increases efficiency by 20% [1].\"\n\n### Output:\nProvide a clear and direct response to the user's query, including inline citations in the format [id] only when the <source> tag with id attribute is present in the context.\n\n<context>\n{{CONTEXT}}\n</context>\n\n<user_query>\n{{QUERY}}\n</user_query>\n",
+      "top_k": 3,
+      "bypass_embedding_and_retrieval": false,
+      "full_context": false,
+      "enable_hybrid_search": false,
+      "top_k_reranker": 3,
+      "relevance_threshold": 0,
+      "hybrid_bm25_weight": 0.5,
+      "CONTENT_EXTRACTION_ENGINE": "",
+      "pdf_extract_images": true,
+      "docling_do_ocr": true,
+      "docling_force_ocr": false,
+      "docling_ocr_engine": "tesseract",
+      "docling_ocr_lang": "eng,fra,deu,spa",
+      "docling_pdf_backend": "dlparse_v4",
+      "docling_table_mode": "accurate",
+      "docling_pipeline": "standard",
+      "text_splitter": "",
+      "chunk_size": 1000,
+      "chunk_overlap": 100,
+      "file": {
+        "max_size": null,
+        "max_count": null,
+        "allowed_extensions": []
       },
-      "loader": {
-        "concurrent_requests": 10,
-        "engine": "",
-        "ssl_verification": true
-      }
+      "web": {
+        "search": {
+          "enable": true,
+          "engine": "searxng",
+          "trust_env": false,
+          "result_count": 5,
+          "concurrent_requests": 10,
+          "domain": {
+            "filter_list": []
+          },
+          "bypass_embedding_and_retrieval": false,
+          "bypass_web_loader": false,
+          "searxng_query_url": "http://searxng:8080/search?q=<query>"
+        },
+        "loader": {
+          "concurrent_requests": 10,
+          "engine": "",
+          "ssl_verification": true
+        }
+      },
+      "youtube_loader_language": ["en"],
+      "embedding_engine": "",
+      "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
     },
-    "youtube_loader_language": ["en"],
-    "embedding_engine": "",
-    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
-  },
-  "file": {
-    "image_compression_width": null,
-    "image_compression_height": null
+    "file": {
+      "image_compression_width": null,
+      "image_compression_height": null
+    }
   }
 }
