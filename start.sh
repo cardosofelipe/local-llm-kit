@@ -164,7 +164,7 @@ echo ""
 # Wait for Open-WebUI to be fully ready before opening browser
 if ! $HEADLESS; then
     log_info "Waiting for Open-WebUI to be fully ready (10s)..."
-    sleep 10
+    sleep 7
     echo ""
 fi
 

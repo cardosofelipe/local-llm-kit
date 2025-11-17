@@ -8,7 +8,8 @@ A complete, ready-to-deploy stack for running local Large Language Models with a
 
 - **Open-WebUI** - Beautiful, extensible web interface for interacting with AI models
 - **Ollama** - Local LLM inference engine with CPU and GPU acceleration
-- **SearXNG** - Privacy-respecting meta-search engine for web-enriched responses
+- **SearXNG** - Privacy-respecting meta-search engine with 30+ search engines
+- **Valkey** - High-performance open-source caching for faster search results
 - **Automated setup** - Hardware detection, config generation, admin account creation
 - **Web search enabled by default** - Real-time web search integration out of the box
 - **Multi-platform GPU support** - Pre-configured for AMD (Vulkan) and NVIDIA (CUDA)
@@ -105,6 +106,9 @@ OPENWEBUI_DATA_PATH=./data/open-webui
 
 # SearXNG config
 SEARXNG_CONFIG_PATH=./config/searxng
+
+# Valkey cache data (search results cache)
+VALKEY_DATA_PATH=./data/valkey
 ```
 
 ### Performance Tuning
@@ -144,6 +148,54 @@ Web search is automatically configured on first start. The system:
 
 Verify at: http://localhost:11300/admin/settings → Documents → Web Search
 
+### SearXNG Enhancements
+
+The stack includes an optimized SearXNG configuration with enterprise-grade features:
+
+**Valkey-Backed Caching:**
+- Valkey is a fully open-source fork of Redis (recommended by SearXNG)
+- Search results cached for 10 minutes (configurable)
+- Significantly faster repeated searches
+- Reduced load on search engines
+- Persistent across container restarts
+
+**30+ Search Engines:**
+- **General**: Google, Bing, DuckDuckGo, Brave, Qwant, Startpage
+- **Images**: Google Images, Bing Images, DuckDuckGo Images
+- **Videos**: YouTube, Google Videos, Bing Videos
+- **News**: Google News, Bing News
+- **IT/Programming**: GitHub, GitLab, Codeberg, Stack Overflow
+- **Science**: Wikipedia, Wikidata, arXiv, PubMed
+- **Files**: Archive.org
+- **Maps**: OpenStreetMap
+- **Social**: Reddit
+- **Music**: SoundCloud
+- **Dictionaries**: Wiktionary, DictZone, Currency Converter
+
+**Privacy Features:**
+- Image proxy enabled (proxies all images through SearXNG)
+- Tracker URL removal
+- No search logs by default
+- Respects robots.txt disabled (internal use only)
+
+**Performance Optimizations:**
+- Connection pooling (100 connections, pool size 20)
+- HTTP/2 enabled for faster connections
+- Intelligent timeout management (5s default, 15s max)
+- Rate limiting with Valkey backend (30 req/min per IP)
+- Docker network whitelisted for unlimited Open-WebUI requests
+
+**Customization:**
+Access SearXNG directly at http://localhost:11380 to:
+- Choose specific search engines
+- Use engine shortcuts (e.g., `!gh` for GitHub, `!wp` for Wikipedia)
+- Filter by category (general, images, news, videos, etc.)
+- Enable/disable safe search
+
+**Configuration Files:**
+- `config/searxng/settings.yml` - Main configuration with engine list
+- `config/searxng/limiter.toml` - Rate limiting and bot detection
+
 ### Secrets
 
 All secrets are auto-generated during `make setup`:
@@ -174,6 +226,7 @@ make restart
 | Open-WebUI | 11300 | Web interface |
 | SearXNG | 11380 | Search engine |
 | Ollama | 11434 | Internal API (not exposed by default) |
+| Valkey | 6379 | Internal cache (not exposed outside Docker network) |
 
 Ports use the 11xxx range to avoid conflicts with common development servers (3000, 8080).
 
@@ -210,7 +263,8 @@ Ports use the 11xxx range to avoid conflicts with common development servers (30
 │       └── init-webui.sh      # Create admin + import config
 └── data/                      # User data (gitignored)
     ├── models/ollama/         # Downloaded models
-    └── open-webui/            # Database, uploads, cache
+    ├── open-webui/            # Database, uploads, cache
+    └── valkey/                # Valkey cache data
 ```
 
 ---
@@ -314,6 +368,50 @@ make restart
 # Settings → Admin Settings → General → Import Config
 # Upload: config-templates/default-config.json
 ```
+
+### SearXNG Issues
+
+**Search results slow or timing out:**
+```bash
+# Check Valkey is running
+docker compose ps valkey
+
+# Check Valkey logs
+docker compose logs valkey
+
+# Test Valkey connection
+docker compose exec valkey valkey-cli ping
+# Should return: PONG
+
+# Restart SearXNG to reconnect to Valkey
+docker compose restart searxng
+```
+
+**Want to customize search engines:**
+```bash
+# Edit the SearXNG configuration
+nano config/searxng/settings.yml
+
+# Restart SearXNG to apply changes
+docker compose restart searxng
+
+# Check SearXNG logs for errors
+docker compose logs searxng
+```
+
+**Clear search cache:**
+```bash
+# Clear Valkey cache
+docker compose exec valkey valkey-cli FLUSHDB
+
+# Or restart Valkey (clears cache on restart)
+docker compose restart valkey
+```
+
+**Access SearXNG directly:**
+- Open http://localhost:11380 in your browser
+- Test searches directly
+- View available engines and their status
 
 ### GPU Not Detected (AMD)
 

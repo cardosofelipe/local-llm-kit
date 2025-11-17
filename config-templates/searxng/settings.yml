@@ -1,23 +1,153 @@
+# SearXNG Enhanced Configuration for Local-LLM-Kit
+# https://docs.searxng.org/admin/settings/index.html
+
+# Use default settings as baseline (includes all stable engines)
 use_default_settings: true
 
 server:
   # IMPORTANT: Generate a unique secret key with: openssl rand -hex 32
   # This key is used to secure sessions and should be changed before deployment
   secret_key: "CHANGE_ME_GENERATE_WITH_OPENSSL"
+
+  # Disable rate limiter for internal use (Docker network whitelisted anyway)
   limiter: false
-  image_proxy: false
 
-# Disable all bot detection plugins
-enabled_plugins: []
+  # Enable image proxy for privacy (proxies external images through SearXNG)
+  image_proxy: true
 
-# Required for JSON API access
-outgoing:
-  request_timeout: 3.0
+  # Bind to all interfaces within container
+  bind_address: "0.0.0.0"
+  port: 8080
 
+# UI Configuration
+ui:
+  static_use_hash: true
+  default_theme: simple
+  theme_args:
+    simple_style: dark
+
+  # Infinite scroll for better UX
+  infinite_scroll: true
+
+  # Query in title for better browser history
+  query_in_title: true
+
+  # Center alignment
+  center_alignment: false
+
+  # Default locale
+  default_locale: "en"
+
+# Search Configuration
 search:
+  # Safe search: 0 = off, 1 = moderate, 2 = strict
   safe_search: 0
-  autocomplete: ""
+
+  # Enable autocomplete using multiple sources
+  autocomplete: "google"
+  autocomplete_min: 2
+
+  # Default language
   default_lang: "en"
+
+  # Ban time for problematic search patterns (seconds)
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 120
+
+  # Output formats (required for JSON API used by Open-WebUI)
   formats:
     - html
     - json
+    - csv
+    - rss
+
+# Valkey Configuration for Caching and Rate Limiting
+# Valkey is a fully open-source fork of Redis, recommended by SearXNG
+# https://docs.searxng.org/admin/settings/settings_redis.html
+valkey:
+  # Valkey connection URL (injected via environment variable SEARXNG_REDIS_URL)
+  # Format: redis://host:port/db (Valkey uses the Redis protocol)
+  url: redis://valkey:6379/0
+
+# Result Caching Configuration
+cache:
+  # Enable Valkey-backed result caching
+  default: valkey
+
+  # Cache timeout in seconds (10 minutes)
+  default_timeout: 600
+
+# Outgoing Request Configuration
+outgoing:
+  # Request timeout in seconds (balance speed vs reliability)
+  request_timeout: 5.0
+
+  # Maximum request timeout for slow engines
+  max_request_timeout: 15.0
+
+  # Connection pooling for better performance
+  pool_connections: 100
+  pool_maxsize: 20
+
+  # Enable keepalive for connection reuse
+  enable_http2: true
+
+  # Retry configuration
+  retries: 1
+
+  # User agent
+  useragent_suffix: "Local-LLM-Kit/1.0"
+
+  # Respect robots.txt (disable for internal use)
+  respect_robots_txt: false
+
+# Enabled Plugins
+enabled_plugins:
+  # Hostname plugin (shows engine hostname in results)
+  - 'Hostname replace'
+
+  # Hash plugin (adds hash to static files for caching)
+  - 'Hash plugin'
+
+  # Self Information (shows SearXNG version in results)
+  - 'Self Information'
+
+  # Tracker URL remover (removes tracking parameters)
+  - 'Tracker URL remover'
+
+  # Open Access DOI rewrite (rewrites DOI links to open access versions)
+  - 'Open Access DOI rewrite'
+
+# Engine-specific overrides (only override, don't define new engines)
+# SearXNG's default engines are already comprehensive
+# We just tweak weights and timeouts for better performance
+engines:
+  # Increase Wikipedia weight (very reliable source)
+  - name: wikipedia
+    weight: 1.5
+
+  # Google with higher weight
+  - name: google
+    weight: 1.2
+
+  # DuckDuckGo with good weight
+  - name: duckduckgo
+    weight: 1.0
+
+  # Brave search
+  - name: brave
+    weight: 1.0
+
+  # Increase timeout for slower but valuable engines
+  - name: arxiv
+    timeout: 8.0
+
+# DOI resolvers for scientific papers
+doi_resolvers:
+  oadoi.org: 'https://oadoi.org/'
+  doi.org: 'https://doi.org/'
+  doai.io: 'https://dissem.in/'
+  sci-hub.se: 'https://sci-hub.se/'
+
+# Default DOI resolver
+default_doi_resolver: 'oadoi.org'

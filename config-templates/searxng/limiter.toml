@@ -1,12 +1,13 @@
-# Limiter configuration for SearXNG in Docker
-# This configuration disables bot detection for internal Docker network
+# SearXNG Rate Limiter Configuration
+# https://docs.searxng.org/admin/settings/settings_limiter.html
+#
+# Since limiter is disabled in settings.yml, this file only whitelists
+# the Docker network to prevent any accidental blocking
 
-# Disable link_token method which requires X-Forwarded-For header
-[botdetection.ip_limit]
-link_token = false
-
-# Whitelist the Docker network subnet
 [botdetection.ip_lists]
+# Whitelist the Docker network subnet and localhost
 pass_ip = [
-  '172.28.0.0/16',
+  '172.28.0.0/16',    # Docker network subnet
+  '127.0.0.0/8',      # Localhost
+  '::1',              # IPv6 localhost
 ]

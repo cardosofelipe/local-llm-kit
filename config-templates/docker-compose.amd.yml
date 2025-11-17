@@ -75,10 +75,34 @@ services:
       retries: 3
       start_period: 40s
 
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: searxng-valkey
+    restart: unless-stopped
+
+    command: valkey-server --save 60 1 --loglevel warning
+
+    volumes:
+      - ${VALKEY_DATA_PATH:-./data/valkey}:/data
+
+    networks:
+      - ollama-network
+
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
   searxng:
     image: searxng/searxng:latest
     container_name: searxng
     restart: unless-stopped
+
+    depends_on:
+      valkey:
+        condition: service_healthy
 
     volumes:
       - ${SEARXNG_CONFIG_PATH:-./config/searxng}:/etc/searxng:rw
@@ -92,6 +116,7 @@ services:
     environment:
       - SEARXNG_BASE_URL=http://searxng:8080
       - SEARXNG_SECRET=${SEARXNG_SECRET:-}
+      - SEARXNG_REDIS_URL=redis://valkey:6379/0
 
     cap_drop:
       - ALL

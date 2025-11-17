@@ -71,6 +71,7 @@ reset:
 			sudo rm -rf data/; \
 		fi; \
 		rm -f .setup-complete docker-compose.yml .env; \
+		rm -f config/searxng/*; \
 		touch data/.gitkeep; \
 		echo ""; \
 		echo "✓ Reset complete. Run 'make setup' to reinitialize."; \
