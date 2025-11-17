@@ -134,9 +134,10 @@ engines:
   - name: duckduckgo
     weight: 1.0
 
-  # Brave search
-  - name: brave
-    weight: 1.0
+  # Brave search (disabled - tends to rate limit aggressively)
+  # Uncomment to enable:
+  # - name: brave
+  #   weight: 0.5
 
   # Increase timeout for slower but valuable engines
   - name: arxiv
